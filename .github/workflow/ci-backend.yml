@@ -74,7 +74,7 @@ jobs:
     steps: 
       - name: login to aws ecr 
         env:
-          AWS_DEFAULT_REGION: 'us-east-1'
+          AWS_DEFAULT_REGION: 'ap-south-1'
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
@@ -82,27 +82,34 @@ jobs:
           echo "Logging into ECR..."
           aws ecr get-login-password --region $AWS_DEFAULT_REGION | \
           docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com 
-      - name: Tag and Push Docker Image
+    # Authenticate with AWS ECR
+      - name: Authenticate Docker to AWS ECR
         run: |
-          IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME }}:${{ github.run_id }}
-          docker tag ${{ secrets.AWS_ECR_REPO_NAME }} $IMAGE_URI
-          docker push $IMAGE_URI
-  
-  trivy-scan:
-      needs: ecr-push 
-      runs-on: ubuntu-latest
-      steps:
-        - name: Run Trivy Image Scan
-          run: trivy image $IMAGE_URI > trivyimage.txt
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
 
-  update-newtag-in-helm-chart:
-    runs-on: ubuntu-latest 
-    needs: trivy-scan
-    steps:
-      - name: checkout repository
-        uses: action/checkout@v4
-        with:
-          token: ${{ secrets.TOKEN }}
+    # Tag Docker Image
+      - name: Tag Docker Image
+        run: |
+          docker tag ${{ secrets.AWS_ECR_REPO_NAME }}:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME }}:${{ github.run_id }}
+
+    # Push Docker Image to ECR
+      - name: Push Docker Image to AWS ECR
+        run: |
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME }}:${{ github.run_id }}
+
+    # Run Trivy Image Scan
+      - name: Run Trivy Image Scan
+        run: |
+          trivy image ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME }}:${{ github.run_id }} > trivyimage.txt
+  
+    # Update the tag to helm values
+      - name: update new tag in helm chart
+        needs: trivy-scan
+        steps:
+         - name: checkout repository
+           uses: action/checkout@v4
+           with:
+             token: ${{ secrets.TOKEN }}
       - name: update tag in helm chart
         run: |
           sed -i 's/tag: .*/tag: "${{github.run_id}}"/' helm-chart/backend-application/values.yaml
@@ -111,7 +118,7 @@ jobs:
         run: |
           git config user.email "lokeshbabu.nalluri1111@gmil.com"
           git config user.name "nlokeshbabu1"
-          git add backend-application/values.yaml
+          git add .
           git commit -m "updated values.yaml file using  ${{ github.run_id }}"
           git push    
           

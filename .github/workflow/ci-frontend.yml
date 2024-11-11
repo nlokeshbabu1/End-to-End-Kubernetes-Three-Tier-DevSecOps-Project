@@ -83,17 +83,17 @@ jobs:
     # Tag Docker Image
     - name: Tag Docker Image
       run: |
-        docker tag ${{ secrets.AWS_ECR_REPO_NAME }}:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME }}:${{ github.run_number }}
+        docker tag ${{ secrets.AWS_ECR_REPO_NAME }}:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME }}:${{ github.run_id }}
 
     # Push Docker Image to ECR
     - name: Push Docker Image to AWS ECR
       run: |
-        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME }}:${{ github.run_number }}
+        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME }}:${{ github.run_id }}
 
     # Run Trivy Image Scan
     - name: Run Trivy Image Scan
       run: |
-        trivy image ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME }}:${{ github.run_number }} > trivyimage.txt
+        trivy image ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME }}:${{ github.run_id }} > trivyimage.txt
 
     # Update Deployment File
       steps:
@@ -103,7 +103,7 @@ jobs:
           token: ${{ secrets.TOKEN }}
       - name: update tag in helm chart
         run: |
-          sed -i 's/tag: .*/tag: "${{github.run_id}}"/' helm-chart/application-application/values.yaml
+          sed -i 's/tag: .*/tag: "${{github.run_id}}"/' helm-chart/frontend-application/values.yaml
 
       - name: commit and push changes
         run: |
