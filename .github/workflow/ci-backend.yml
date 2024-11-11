@@ -2,40 +2,40 @@ name: CI for Backend
 
 on:
   push:
-    branch:
-      - "main":
+    branches:
+      - "main"
     paths-ignore:
-      - REAME.md
+      - README.md
       - helm-chart/*
       - Jenkins-server-TF
       - Kubernetes-Manifests-file
-    
 
 jobs:
-  test , build , push and update-tag-helm-chart: 
   setup:
     runs-on: ubuntu-latest
     steps:
-      #The will get from the github
-      - name: Checkout the code  
-        uses: action/checkout@3
+      # Checkout the code
+      - name: Checkout the code
+        uses: actions/checkout@v3
 
-      #The ubuntu will install the java
-      - name: Setup java          
-        uses: action/setup-java@v3
+      # Setup Java
+      - name: Setup Java
+        uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: "17"
+          java-version: '17'
 
-      #The ubuntu will install the nodejs
-      - name: set up nodejs       
-        uses: action/setup-nodejs@v3
+      # Setup Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
-          node-version: "14"
-  
-  #sonarqube will setup and run the code quality check
-  sonarqube-qulity-check:                   
-      - name: setup sonarqube
+          node-version: '14'
+
+  sonarqube-quality-check:
+    runs-on: ubuntu-latest
+    steps:
+      # Setup SonarQube
+      - name: Setup SonarQube
         uses: SonarSource/sonarqube-scan-action@v1.0.1
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -44,36 +44,39 @@ jobs:
           cd Application-Code/backend
           sonar-scanner -Dsonar.projectName=three-tier-backend -Dsonar.projectKey=three-tier-backend
 
-    # Wait for Quality Gate to pass before continuing
+      # Wait for Quality Gate to pass before continuing
       - name: Wait for Quality Gate
         run: |
-          curl -u ${{ secrets.SONARQUBE_TOKEN }} "https://sonar.example.com/api/qualitygates/project_status?projectKey=three-tier-backend" \
-          | jq '.projectStatus.status' | grep -q 'OK'
+          curl -u ${{ secrets.SONAR_TOKEN }} "https://sonar.example.com/api/qualitygates/project_status?projectKey=three-tier-backend" \
+            | jq '.projectStatus.status' | grep -q 'OK'
 
-    # Run OWASP Dependency-Check Scan
+      # Run OWASP Dependency-Check Scan
       - name: Run OWASP Dependency-Check Scan
         run: |
           cd Application-Code/backend
           dependency-check --scan ./ --disableYarnAudit --disableNodeAudit -o ./dependency-check-report.xml
 
-    # Publish OWASP Dependency-Check Report
+      # Publish OWASP Dependency-Check Report
       - name: Publish OWASP Dependency-Check Report
         uses: snyk/actions@v1
         with:
           report-file: Application-Code/backend/dependency-check-report.xml
 
-  #The docker images will build
-  docker-build:                 
-      - name: build docker image
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      # Build Docker image
+      - name: Build Docker Image
         run: |
-          cd Application-code/backend
-          sudo docker build -t ${{ secrets.AWS_ECR_REPO_NAME }} 
+          cd Application-Code/backend
+          sudo docker build -t ${{ secrets.AWS_ECR_REPO_NAME }} .
 
-  ecr-push:    
+  ecr-push:
     needs: docker-build
     runs-on: ubuntu-latest
-    steps: 
-      - name: login to aws ecr 
+    steps:
+      # Login to AWS ECR
+      - name: Login to AWS ECR
         env:
           AWS_DEFAULT_REGION: 'ap-south-1'
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
@@ -82,48 +85,43 @@ jobs:
         run: |
           echo "Logging into ECR..."
           aws ecr get-login-password --region $AWS_DEFAULT_REGION | \
-          docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com 
-    # Authenticate with AWS ECR
-      - name: Authenticate Docker to AWS ECR
-        run: |
-          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+          docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
 
-    # Tag Docker Image
+      # Tag Docker Image
       - name: Tag Docker Image
         run: |
           docker tag ${{ secrets.AWS_ECR_REPO_NAME }}:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME }}:${{ github.run_id }}
 
-    # Push Docker Image to ECR
+      # Push Docker Image to ECR
       - name: Push Docker Image to AWS ECR
         run: |
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME }}:${{ github.run_id }}
 
-    # Run Trivy Image Scan
+      # Run Trivy Image Scan
       - name: Run Trivy Image Scan
         run: |
           trivy image ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME }}:${{ github.run_id }} > trivyimage.txt
-  
-    # Update the tag to helm values
-      - name: update new tag in helm chart
-#        needs: trivy-scan
-        steps:
-         - name: checkout repository
-           uses: action/checkout@v4
-           with:
-             token: ${{ secrets.TOKEN }}
-      - name: update tag in helm chart
-        run: |
-          sed -i 's/tag: .*/tag: "${{github.run_id}}"/' helm-chart/backend-application/values.yaml
 
-      - name: commit and push changes
+  update-helm-chart:
+    needs: ecr-push
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.TOKEN }}
+
+      # Update tag in helm chart
+      - name: Update Tag in Helm Chart
         run: |
-          git config user.email "lokeshbabu.nalluri1111@gmil.com"
+          sed -i 's/tag: .*/tag: "${{ github.run_id }}"/' helm-chart/backend-application/values.yaml
+
+      # Commit and push changes
+      - name: Commit and Push Changes
+        run: |
+          git config user.email "lokeshbabu.nalluri1111@gmail.com"
           git config user.name "nlokeshbabu1"
-          git add .
-          git commit -m "updated values.yaml file using  ${{ github.run_id }}"
-          git push    
-          
-
-    
-      
-
+          git add helm-chart/backend-application/values.yaml
+          git commit -m "Updated values.yaml file with new tag ${{ github.run_id }}"
+          git push
