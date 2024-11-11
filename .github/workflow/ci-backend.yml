@@ -34,7 +34,7 @@ jobs:
   sonarqube-quality-check:
     runs-on: ubuntu-latest
     steps:
-      # Setup SonarQube
+      # Setup SonarQube and run the code quality scan
       - name: Setup SonarQube
         uses: SonarSource/sonarqube-scan-action@v1.0.1
         env:
