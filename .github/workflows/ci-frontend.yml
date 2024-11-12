@@ -17,7 +17,7 @@ jobs:
 
     # Checkout the code from the GitHub repository
     - name: Checkout Code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0  # To ensure we get the full commit history
 
