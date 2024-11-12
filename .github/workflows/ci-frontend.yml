@@ -96,17 +96,16 @@ jobs:
         trivy image ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME }}:${{ github.run_id }} > trivyimage.txt
 
     # Update Deployment File
-      steps:
-      - name: checkout repository
-        uses: action/checkout@v4
-        with:
-          token: ${{ secrets.TOKEN }}
-      - name: update tag in helm chart
-        run: |
+    - name: checkout repository
+      uses: action/checkout@v4
+      with:
+         token: ${{ secrets.TOKEN }}
+    - name: update tag in helm chart
+      run: |
           sed -i 's/tag: .*/tag: "${{github.run_id}}"/' helm-chart/frontend-application/values.yaml
 
-      - name: commit and push changes
-        run: |
+    - name: commit and push changes
+      run: |
           git config user.email "lokeshbabu.nalluri1111@gmil.com"
           git config user.name "nlokeshbabu1"
           git add .
