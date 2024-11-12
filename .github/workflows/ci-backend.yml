@@ -17,7 +17,7 @@ jobs:
     steps:
       #The will get from the github
       - name: Checkout the code  
-        uses: action/checkout@3
+        uses: action/checkout@4
 
       #The ubuntu will install the java
       - name: Setup java          
@@ -33,12 +33,19 @@ jobs:
           node-version: "14"
   
   #sonarqube will setup and run the code quality check
-  sonarqube-qulity-check:                   
+  sonarqube-qulity-check:       
+    runs-on: ubuntu-latest  
+    steps:
+      #The will get from the github
+      - name: Checkout the code  
+        uses: action/checkout@4    
+    
       - name: setup sonarqube
         uses: SonarSource/sonarqube-scan-action@v1.0.1
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_URL: ${{ secrets.SONAR_URL }}
+      - name: Run SonarQube Analysis    
         run: |
           cd Application-Code/backend
           sonar-scanner -Dsonar.projectName=three-tier-backend -Dsonar.projectKey=three-tier-backend
@@ -59,10 +66,15 @@ jobs:
       - name: Publish OWASP Dependency-Check Report
         uses: snyk/actions@v1
         with:
-          report-file: Application-Code/backend/dependency-check-report.xml
+           report-file: Application-Code/backend/dependency-check-report.xml
 
   #The docker images will build
-  docker-build:                 
+  docker-build:     
+    runs-on: ubuntu-latest  
+    steps:
+      #The will get from the github
+      - name: Checkout the code  
+        uses: action/checkout@4    
       - name: build docker image
         run: |
           cd Application-code/backend
@@ -103,12 +115,12 @@ jobs:
           trivy image ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME }}:${{ github.run_id }} > trivyimage.txt
   
     # Update the tag to helm values
-      - name: update new tag in helm chart
-        needs: trivy-scan
-        steps:
-         - name: checkout repository
-           uses: action/checkout@v4
-           with:
+#      - name: update new tag in helm chart
+#        needs: trivy-scan
+#        steps:
+      - name: checkout repository
+        uses: action/checkout@v4
+        with:
              token: ${{ secrets.TOKEN }}
       - name: update tag in helm chart
         run: |
