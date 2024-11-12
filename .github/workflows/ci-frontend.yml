@@ -47,10 +47,10 @@ jobs:
     steps:
       #The will get from the github
       - name: Checkout the code  
-        uses: action/checkout@4    
+        uses: actions/checkout@4    
     
       - name: setup sonarqube
-        uses: SonarSource/sonarqube-scan-action@v1.0.1
+        uses: SonarSource/sonarqube-scan-action@v2
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_URL: ${{ secrets.SONAR_URL }}    
@@ -73,7 +73,7 @@ jobs:
 
     # Publish OWASP Dependency-Check Report
       - name: Publish OWASP Dependency-Check Report
-        uses: snyk/actions@v1
+        uses: snyk/actions@v1.0.1
         with:
           report-file: Application-Code/frontend/dependency-check-report.xml
 
@@ -89,7 +89,7 @@ jobs:
     steps:
       #The will get from the github
       - name: Checkout the code  
-        uses: action/checkout@4    
+        uses: actions/checkout@4    
       - name: build docker image
         run: |
           cd Application-code/backend
@@ -118,7 +118,7 @@ jobs:
 
     # Update Deployment File
       - name: checkout repository
-        uses: action/checkout@v4
+        uses: actions/checkout@v4
         with:
          token: ${{ secrets.TOKEN }}
       - name: update tag in helm chart
