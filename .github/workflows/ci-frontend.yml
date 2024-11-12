@@ -73,7 +73,7 @@ jobs:
 
     # Publish OWASP Dependency-Check Report
       - name: Publish OWASP Dependency-Check Report
-        uses: snyk/actions@v1.0.1
+        uses: snyk/actions@v1
         with:
           report-file: Application-Code/frontend/dependency-check-report.xml
 
