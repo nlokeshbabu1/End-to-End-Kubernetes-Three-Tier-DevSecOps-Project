@@ -40,72 +40,92 @@ jobs:
         docker container prune -f
 
     # Run SonarQube Analysis
-    - name: Run SonarQube Analysis
-      run: |
-        cd Application-Code/frontend
-        sonar-scanner -Dsonar.projectName=three-tier-frontend -Dsonar.projectKey=three-tier-frontend
+  #sonarqube will setup and run the code quality check
+  sonarqube-qulity-check:       
+    runs-on: ubuntu-latest  
+    steps:
+      #The will get from the github
+      - name: Checkout the code  
+        uses: action/checkout@4    
+    
+      - name: setup sonarqube
+        uses: SonarSource/sonarqube-scan-action@v1.0.1
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_URL: ${{ secrets.SONAR_URL }}    
+      - name: Run SonarQube Analysis
+        run: |
+          cd Application-Code/frontend
+          sonar-scanner -Dsonar.projectName=three-tier-frontend -Dsonar.projectKey=three-tier-frontend
 
     # Wait for Quality Gate to pass before continuing
-    - name: Wait for Quality Gate
-      run: |
-        curl -u ${{ secrets.SONARQUBE_TOKEN }} "https://sonar.example.com/api/qualitygates/project_status?projectKey=three-tier-frontend" \
-          | jq '.projectStatus.status' | grep -q 'OK'
+      - name: Wait for Quality Gate
+        run: |
+          curl -u ${{ secrets.SONARQUBE_TOKEN }} "https://sonar.example.com/api/qualitygates/project_status?projectKey=three-tier-frontend" \
+            | jq '.projectStatus.status' | grep -q 'OK'
 
     # Run OWASP Dependency-Check Scan
-    - name: Run OWASP Dependency-Check Scan
-      run: |
-        cd Application-Code/frontend
-        dependency-check --scan ./ --disableYarnAudit --disableNodeAudit -o ./dependency-check-report.xml
+      - name: Run OWASP Dependency-Check Scan
+        run: |
+          cd Application-Code/frontend
+          dependency-check --scan ./ --disableYarnAudit --disableNodeAudit -o ./dependency-check-report.xml
 
     # Publish OWASP Dependency-Check Report
-    - name: Publish OWASP Dependency-Check Report
-      uses: snyk/actions@v1
-      with:
-        report-file: Application-Code/frontend/dependency-check-report.xml
+      - name: Publish OWASP Dependency-Check Report
+        uses: snyk/actions@v1
+        with:
+          report-file: Application-Code/frontend/dependency-check-report.xml
 
     # Run Trivy File Scan
-    - name: Run Trivy File Scan
-      run: |
-        cd Application-Code/frontend
-        trivy fs . > trivyfs.txt
+      - name: Run Trivy File Scan
+        run: |
+          cd Application-Code/frontend
+          trivy fs . > trivyfs.txt
 
-    # Build Docker Image
-    - name: Build Docker Image
-      run: |
-        cd Application-Code/frontend
-        docker build -t ${{ secrets.AWS_ECR_REPO_NAME }} .
+  #The docker images will build
+  docker-build:     
+    runs-on: ubuntu-latest  
+    steps:
+      #The will get from the github
+      - name: Checkout the code  
+        uses: action/checkout@4    
+      - name: build docker image
+        run: |
+          cd Application-code/backend
+          sudo docker build -t ${{ secrets.AWS_ECR_REPO_NAME }} 
+
 
     # Authenticate with AWS ECR
-    - name: Authenticate Docker to AWS ECR
-      run: |
-        aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      - name: Authenticate Docker to AWS ECR
+        run: |
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
 
     # Tag Docker Image
-    - name: Tag Docker Image
-      run: |
-        docker tag ${{ secrets.AWS_ECR_REPO_NAME }}:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME }}:${{ github.run_id }}
+      - name: Tag Docker Image
+        run: |
+         docker tag ${{ secrets.AWS_ECR_REPO_NAME }}:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME }}:${{ github.run_id }}
 
     # Push Docker Image to ECR
-    - name: Push Docker Image to AWS ECR
-      run: |
-        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME }}:${{ github.run_id }}
+      - name: Push Docker Image to AWS ECR
+        run: |
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME }}:${{ github.run_id }}
 
     # Run Trivy Image Scan
-    - name: Run Trivy Image Scan
-      run: |
-        trivy image ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME }}:${{ github.run_id }} > trivyimage.txt
+      - name: Run Trivy Image Scan
+        run: |
+          trivy image ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME }}:${{ github.run_id }} > trivyimage.txt
 
     # Update Deployment File
-    - name: checkout repository
-      uses: action/checkout@v4
-      with:
+      - name: checkout repository
+        uses: action/checkout@v4
+        with:
          token: ${{ secrets.TOKEN }}
-    - name: update tag in helm chart
-      run: |
+      - name: update tag in helm chart
+        run: |
           sed -i 's/tag: .*/tag: "${{github.run_id}}"/' helm-chart/frontend-application/values.yaml
 
-    - name: commit and push changes
-      run: |
+      - name: commit and push changes
+        run: |
           git config user.email "lokeshbabu.nalluri1111@gmil.com"
           git config user.name "nlokeshbabu1"
           git add .
