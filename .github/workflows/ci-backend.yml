@@ -48,7 +48,7 @@ jobs:
       - name: Run SonarQube Analysis    
         run: |
           cd Application-Code/backend
-          sonar-scanner -Dsonar.projectName=three-tier-backend -Dsonar.projectKey=three-tier-backend
+          sonar-scanner -Dsonar.projectName=three-tier-backend -Dsonar.projectKey=three-tier-backend -Dsonar.host.url=${{ secrets.SONAR_URL }}
 
     # Wait for Quality Gate to pass before continuing
       - name: Wait for Quality Gate
