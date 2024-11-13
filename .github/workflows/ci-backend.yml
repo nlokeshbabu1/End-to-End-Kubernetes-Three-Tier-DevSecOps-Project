@@ -87,8 +87,8 @@ jobs:
     - uses: actions/checkout@v2
     - uses: docker://ghcr.io/kciter/aws-ecr-action:latest
       with:
-        access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        access_key_id: ${{ secrets.AAWS_ACCESS_KEY }}
+        secret_access_key: ${{ secrets.AWS_SECRET_KEY }}
         account_id: ${{ secrets.AWS_ACCOUNT_ID }}
         repo: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME_BACKEND }}
         region: ap-south-1
