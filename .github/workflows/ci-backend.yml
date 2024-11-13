@@ -95,15 +95,18 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Run Trivy
-      uses: anvayacloud/trivy-action@vmain
-      with:
-        image_name: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        format: "json"
-
-    # Run Trivy Image Scan
-    - name: Run Trivy Image Scan
+      uses: anvayacloud/trivy-action@master
       run: |
          trivy image ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME_BACKEND }}:${{ github.run_id }} > trivyimage.txt
+      
+#      with:
+#        image_name: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+#        format: "json"
+
+    # Run Trivy Image Scan
+#    - name: Run Trivy Image Scan
+#      run: |
+#         trivy image ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME_BACKEND }}:${{ github.run_id }} > trivyimage.txt
   
     # Update the tag to helm values
 #      - name: update new tag in helm chart
