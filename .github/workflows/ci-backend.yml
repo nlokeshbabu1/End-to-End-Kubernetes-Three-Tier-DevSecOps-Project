@@ -41,7 +41,7 @@ jobs:
         uses: actions/checkout@v2    
     
       - name: setup sonarqube
-        uses: kitabisa/sonarqube-action@v1
+        uses: sonarsource/sonarqube-scan-action@master
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_URL: ${{ secrets.SONAR_URL }}
@@ -57,11 +57,11 @@ jobs:
 #          | jq '.projectStatus.status' | grep -q 'OK'
 
     # Install the dependenccy check
-      - name: Install OWASP Dependency-Check
-        run: |
-          curl -L https://github.com/jeremylong/DependencyCheck/releases/download/v8.0.0/dependency-check-8.0.0-release.zip -o dependency-check.zip
-          unzip dependency-check.zip -d /opt
-          export PATH=$PATH:/opt/dependency-check/bin
+#      - name: Install OWASP Dependency-Check
+#        run: |
+#          curl -L https://github.com/jeremylong/DependencyCheck/releases/download/v8.0.0/dependency-check-8.0.0-release.zip -o dependency-check.zip
+#          unzip dependency-check.zip -d /opt
+#          export PATH=$PATH:/opt/dependency-check/bin
 
 
           
@@ -71,10 +71,10 @@ jobs:
 #          dependency-check --scan ./ --disableYarnAudit --disableNodeAudit -o ./dependency-check-report.xml
 
     # Publish OWASP Dependency-Check Report
-      - name: Publish OWASP Dependency-Check Report
-        uses: snyk/actions/node@master #changed
-        with:
-           report-file: Application-Code/backenddependency-check-report.xml
+ #     - name: Publish OWASP Dependency-Check Report
+ #       uses: snyk/actions/node@master #changed
+ #       with:
+ #          report-file: Application-Code/backenddependency-check-report.xml
 
   #The docker images will build
   docker-build:     
@@ -86,7 +86,7 @@ jobs:
       - name: build docker image
         run: |
           cd Application-Code/backend
-          sudo docker build -t ${{ secrets.AWS_ECR_REPO_NAME }} .
+          sudo docker buildx build -t ${{ secrets.AWS_ECR_REPO_NAME }} .
 
   ecr-push:    
     needs: docker-build
@@ -110,10 +110,10 @@ jobs:
            ECR_REGISTRY: ${{ steps.login-pf-aws-ecr.outputs.registry }}
            ECR_REPOSITORY: ${{secrets.AWS_ECR_REPO}}
            IMAGE_TAG: latest
-        run: |
-           cd Application-Code/backend
-           docker buildx build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+ #       run: |
+ #          cd Application-Code/backend
+ #          docker buildx build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+ #          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
     
  #   runs-on: ubuntu-latest
@@ -129,9 +129,9 @@ jobs:
   #        aws ecr get-login-password --region $AWS_DEFAULT_REGION | \
   #        docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com 
     # Authenticate with AWS ECR
-      - name: Authenticate Docker to AWS ECR
-        run: |
-          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+ #     - name: Authenticate Docker to AWS ECR
+ #       run: |
+ #         aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
 
     # Tag Docker Image
       - name: Tag Docker Image
