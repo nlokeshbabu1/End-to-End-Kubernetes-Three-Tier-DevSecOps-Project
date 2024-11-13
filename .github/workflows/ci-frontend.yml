@@ -63,10 +63,15 @@ jobs:
           export PATH=$PATH:/opt/dependency-check/bin
 
     # Run OWASP Dependency-Check Scan
-      - name: Run OWASP Dependency-Check Scan
-        run: |
-          cd Application-Code/frontend
-          dependency-check --scan ./ --disableYarnAudit --disableNodeAudit -o ./dependency-check-report.xml
+# Run OWASP Dependency-Check Scan
+      - name: Run Dependency-Check
+        uses: ependency-check/Dependency-Check_Action@main@v1
+        with:
+          project: 'three-tier-backend'
+          path: 'Application-Code/backend'
+          disableYarnAudit: true
+          disableNodeAudit: true
+          outputFile: 'dependency-check-report.xml'
 
     # Publish OWASP Dependency-Check Report
       - name: Publish OWASP Dependency-Check Report
