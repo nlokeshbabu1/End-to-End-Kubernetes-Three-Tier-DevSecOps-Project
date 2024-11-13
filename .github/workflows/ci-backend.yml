@@ -80,7 +80,7 @@ jobs:
  #          report-file: Application-Code/backenddependency-check-report.xml
 
   #The docker images will build
-  docker-build:     
+#  docker-build:     
   build-and-push:
     runs-on: ubuntu-latest
     steps:
