@@ -90,7 +90,7 @@ jobs:
         access_key_id: ${{ secrets.AWS_ACCESS_KEY }}
         secret_access_key: ${{ secrets.AWS_SECRET_KEY }}
         account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-        repo: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME_BACKEND }}
+        repo: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/backend
         region: ap-south-1
         tags: ${{ github.run_id }}
         create_repo: true
