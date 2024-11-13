@@ -99,6 +99,8 @@ jobs:
       with:
         image_name: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         format: "json"
+        trivy-config: |
+          db_repo: 'mongo:4.4.6'
         exit-code: '1'
         ignore-unfixed: true
         vuln-type: 'os,library'
