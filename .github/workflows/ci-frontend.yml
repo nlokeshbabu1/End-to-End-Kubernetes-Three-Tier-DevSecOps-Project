@@ -88,34 +88,16 @@ jobs:
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-  trivy-scan:
-    name: trivy-scan
-    runs-on: ubuntu-latest
-    needs: build-and-push
-    steps:
-    - uses: actions/checkout@v2
-    - name: Run Trivy
-      uses: aquasecurity/trivy-action@master
-      with:
-        image_name: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        format: "json"
-        trivy-config: |
-          db_repo: 'mongo:4.4.6'
-        exit-code: '1'
-        ignore-unfixed: true
-        vuln-type: 'os,library'
-        severity: 'MEDIUM'
-        continue-on-error: true   
+    - name: install trivy
+      run: |
+        wget https://github.com/aquasecurity/trivy/releases/download/v0.18.3/trivy_0.18.3_Linux-64bit.deb
+        sudo dpkg -i trivy_0.18.3_Linux-64bit.deb
 
-    # Run Trivy Image Scan
-#    - name: Run Trivy Image Scan
-#      run: |
-#         trivy image ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME_BACKEND }}:${{ github.run_id }} > trivyimage.txt
+    - name: Run Trivy Image Scan
+      run: |
+         trivy image ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME_BACKEND }}:${{ github.run_id }} > trivyimage.txt
   
-    # Update the tag to helm values
-#      - name: update new tag in helm chart
-#        needs: trivy-scan
-#        steps:
+
 
   update-newtag-in-helm-chart:
     runs-on: ubuntu:latest
