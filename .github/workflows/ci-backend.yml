@@ -65,7 +65,7 @@ jobs:
 
 # Run OWASP Dependency-Check Scan
       - name: Run Dependency-Check
-        uses: ependency-check/Dependency-Check_Action@main@v1
+        uses: dependency-check/Dependency-Check_Action@main@v1
         with:
           project: 'three-tier-backend'
           path: 'Application-Code/backend'
