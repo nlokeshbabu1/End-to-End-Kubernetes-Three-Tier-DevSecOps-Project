@@ -95,7 +95,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Run Trivy
-      uses: anvayacloud/trivy-action@v0.0.2
+      uses: anvayacloud/trivy-action@vmain
       with:
         image_name: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         format: "json"
