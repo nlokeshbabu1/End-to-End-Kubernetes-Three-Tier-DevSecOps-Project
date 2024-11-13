@@ -83,10 +83,10 @@ jobs:
       #The will get from the github
       - name: Checkout the code  
         uses: actions/checkout@v2    
-      - name: build docker image
-        run: |
-          cd Application-Code/backend
-          sudo docker buildx build -t ${{ secrets.AWS_ECR_REPO_NAME }} .
+   #   - name: build docker image
+   #     run: |
+   #       cd Application-Code/backend
+   #       sudo docker buildx build -t ${{ secrets.AWS_ECR_REPO_NAME }} .
 
   ecr-push:    
     needs: docker-build
@@ -110,9 +110,9 @@ jobs:
            ECR_REGISTRY: ${{ steps.login-pf-aws-ecr.outputs.registry }}
            ECR_REPOSITORY: ${{secrets.AWS_ECR_REPO}}
            IMAGE_TAG: latest
- #       run: |
- #          cd Application-Code/backend
- #          docker buildx build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        run: |
+           cd Application-Code/backend
+           docker buildx build -t ${{ secrets.AWS_ECR_REPO_NAME }} .
  #          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
     
