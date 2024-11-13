@@ -11,34 +11,25 @@ on:
       - Kubernetes-Manifests-file
 
 jobs:
-  build:
+  setup:
     runs-on: ubuntu-latest
     steps:
+      #The will get from the github
+      - name: Checkout the code  
+        uses: actions/checkout@v2 #change
 
-    # Checkout the code from the GitHub repository
-    - name: Checkout Code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # To ensure we get the full commit history
+      #The ubuntu will install the java
+      - name: Setup java          
+        uses: actions/setup-java@v4 #change
+        with:
+          distribution: 'temurin'
+          java-version: "21"
 
-    # Set up JDK and Node.js
-    - name: Set up JDK
-      uses: actions/setup-java@v2
-      with:
-        java-version: '11'
-        distribution: 'temurin'
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '16'
-
-    # Clean the workspace (cleanup step before build)
-    - name: Clean Workspace
-      run: |
-        rm -rf node_modules
-        docker system prune -f
-        docker container prune -f
+      #The ubuntu will install the nodejs
+      - name: set up nodejs       
+        uses: actions/setup-node@v4 #chage
+        with:
+          node-version: "14"
 
     # Run SonarQube Analysis
   #sonarqube will setup and run the code quality check
@@ -47,23 +38,29 @@ jobs:
     steps:
       #The will get from the github
       - name: Checkout the code  
-        uses: actions/checkout@4    
+        uses: actions/checkout@2    
     
       - name: setup sonarqube
-        uses: SonarSource/sonarqube-scan-action@v2
+        uses: warchant/setup-sonar-scanner@v7
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_URL: ${{ secrets.SONAR_URL }}    
       - name: Run SonarQube Analysis
         run: |
           cd Application-Code/frontend
-          sonar-scanner -Dsonar.projectName=three-tier-frontend -Dsonar.projectKey=three-tier-frontend
+          sonar-scanner -Dsonar.projectName=three-tier-frontend -Dsonar.projectKey=three-tier-frontend -Dsonar.host.url=${{ secrets.SONAR_URL }} -Dsonar.login=${{ secrets.SONAR_TOKEN }}
 
     # Wait for Quality Gate to pass before continuing
-      - name: Wait for Quality Gate
+#      - name: Wait for Quality Gate
+#        run: |
+#          curl -u ${{ secrets.SONARQUBE_TOKEN }} "https://sonar.example.com/api/qualitygates/project_status?projectKey=three-tier-frontend" \
+#            | jq '.projectStatus.status' | grep -q 'OK'
+    #Install the dependency check
+      - name: Install OWASP Dependency-Check
         run: |
-          curl -u ${{ secrets.SONARQUBE_TOKEN }} "https://sonar.example.com/api/qualitygates/project_status?projectKey=three-tier-frontend" \
-            | jq '.projectStatus.status' | grep -q 'OK'
+          curl -L https://github.com/jeremylong/DependencyCheck/releases/download/v8.0.0/dependency-check-8.0.0-release.zip -o dependency-check.zip
+          unzip dependency-check.zip -d /opt
+          export PATH=$PATH:/opt/dependency-check/bin
 
     # Run OWASP Dependency-Check Scan
       - name: Run OWASP Dependency-Check Scan
@@ -73,7 +70,7 @@ jobs:
 
     # Publish OWASP Dependency-Check Report
       - name: Publish OWASP Dependency-Check Report
-        uses: snyk/actions@v1
+        uses: snyk/actions/node@master
         with:
           report-file: Application-Code/frontend/dependency-check-report.xml
 
