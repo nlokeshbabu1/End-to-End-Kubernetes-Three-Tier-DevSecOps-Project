@@ -1,4 +1,4 @@
-name: DevSecOps Pipeline
+name: CI for Frontend
 
 on:
   push:
@@ -9,6 +9,10 @@ on:
       - helm-chart/*
       - Jenkins-server-TF
       - Kubernetes-Manifests-file
+    
+permissions:
+  contents: read
+
 
 jobs:
   setup:
@@ -30,111 +34,95 @@ jobs:
         uses: actions/setup-node@v4 #chage
         with:
           node-version: "14"
-
-    # Run SonarQube Analysis
+  
   #sonarqube will setup and run the code quality check
   sonarqube-qulity-check:       
     runs-on: ubuntu-latest  
+    needs: setup
     steps:
       #The will get from the github
       - name: Checkout the code  
-        uses: actions/checkout@2    
+        uses: actions/checkout@v2    
     
       - name: setup sonarqube
-        uses: sonarsource/sonarqube-scan-action@v4
+        uses: warchant/setup-sonar-scanner@v7
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_URL: ${{ secrets.SONAR_URL }}    
-      - name: Run SonarQube Analysis
+          SONAR_URL: ${{ secrets.SONAR_URL }}
+      - name: Run SonarQube Analysis     
         run: |
           cd Application-Code/frontend
-          sonar-scanner -Dsonar.projectName=three-tier-frontend -Dsonar.projectKey=three-tier-frontend -Dsonar.host.url=${{ secrets.SONAR_URL }} -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+          sonar-scanner -Dsonar.projectName=three-tier-backend -Dsonar.projectKey=three-tier-frontend -Dsonar.host.url=${{ secrets.SONAR_URL }} -Dsonar.login=${{ secrets.SONAR_TOKEN }} #chaged
 
-    # Wait for Quality Gate to pass before continuing
-#      - name: Wait for Quality Gate
-#        run: |
-#          curl -u ${{ secrets.SONARQUBE_TOKEN }} "https://sonar.example.com/api/qualitygates/project_status?projectKey=three-tier-frontend" \
-#            | jq '.projectStatus.status' | grep -q 'OK'
-    #Install the dependency check
-      - name: Install OWASP Dependency-Check
-        run: |
-          curl -L https://github.com/jeremylong/DependencyCheck/releases/download/v8.0.0/dependency-check-8.0.0-release.zip -o dependency-check.zip
-          unzip dependency-check.zip -d /opt
-          export PATH=$PATH:/opt/dependency-check/bin
-
-    # Run OWASP Dependency-Check Scan
-# Run OWASP Dependency-Check Scan
-      - name: Run Dependency-Check
-        uses: ependency-check/Dependency-Check_Action@main@v1
-        with:
-          project: 'three-tier-backend'
-          path: 'Application-Code/backend'
-          disableYarnAudit: true
-          disableNodeAudit: true
-          outputFile: 'dependency-check-report.xml'
-
-    # Publish OWASP Dependency-Check Report
-      - name: Publish OWASP Dependency-Check Report
-        uses: snyk/actions/node@master
-        with:
-          report-file: Application-Code/frontend/dependency-check-report.xml
-
-    # Run Trivy File Scan
-      - name: Run Trivy File Scan
-        run: |
-          cd Application-Code/frontend
-          trivy fs . > trivyfs.txt
 
   #The docker images will build
-  docker-build:     
-    runs-on: ubuntu-latest  
-    steps:
-      #The will get from the github
-      - name: Checkout the code  
-        uses: actions/checkout@4    
-      - name: build docker image
-        run: |
-          cd Application-code/backend
-          sudo docker build -t ${{ secrets.AWS_ECR_REPO_NAME }} 
-
-  ecr-push:    
-    needs: docker-build
+  
+  build-and-push:
+    name: Build and Push to ECR
     runs-on: ubuntu-latest
-    steps: 
-      - name: login to aws ecr 
-        env:
-          AWS_DEFAULT_REGION: 'ap-south-1'
-          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
- 
+    needs: sonarqube-qulity-check
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+        aws-region: ap-south-1
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
 
 
-    # Authenticate with AWS ECR
-      - name: Authenticate Docker to AWS ECR
-        run: |
-          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+    - name: Build, Tag, and Push the Image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: frontend-application
+        IMAGE_TAG: ${{ github.run_id }}
+      run: |
+        cd Application-Code/frontend
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-    # Tag Docker Image
-      - name: Tag Docker Image
-        run: |
-         docker tag ${{ secrets.AWS_ECR_REPO_NAME }}:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME_FRONTEND }}:${{ github.run_id }}
-
-    # Push Docker Image to ECR
-      - name: Push Docker Image to AWS ECR
-        run: |
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME_FRONTEND }}:${{ github.run_id }}
+  trivy-scan:
+    name: trivy-scan
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run Trivy
+      uses: aquasecurity/trivy-action@master
+      with:
+        image_name: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        format: "json"
+        exit-code: '1'
+        ignore-unfixed: true
+        vuln-type: 'os,library'
+        severity: 'MEDIUM'
+        continue-on-error: true   
 
     # Run Trivy Image Scan
-      - name: Run Trivy Image Scan
-        run: |
-          trivy image ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME_FRONTEND }}:${{ github.run_id }} > trivyimage.txt
+#    - name: Run Trivy Image Scan
+#      run: |
+#         trivy image ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME_BACKEND }}:${{ github.run_id }} > trivyimage.txt
+  
+    # Update the tag to helm values
+#      - name: update new tag in helm chart
+#        needs: trivy-scan
+#        steps:
 
-    # Update Deployment File
+  update-newtag-in-helm-chart:
+    runs-on: ubuntu:latest
+    needs: build-and-push
+    steps:
       - name: checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
         with:
-         token: ${{ secrets.TOKEN }}
+             token: ${{ secrets.TOKEN }}
       - name: update tag in helm chart
         run: |
           sed -i 's/tag: .*/tag: "${{github.run_id}}"/' helm-chart/frontend-application/values.yaml
