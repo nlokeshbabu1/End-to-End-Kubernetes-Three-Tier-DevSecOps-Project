@@ -99,6 +99,11 @@ jobs:
       with:
         image_name: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         format: "json"
+        exit-code: '1'
+        ignore-unfixed: true
+        vuln-type: 'os,library'
+        severity: 'MEDIUM'
+        continue-on-error: true             # allow the build to fail, similar to "allow_failure: true" in GitLab
 
     # Run Trivy Image Scan
 #    - name: Run Trivy Image Scan
