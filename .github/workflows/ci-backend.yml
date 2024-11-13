@@ -54,34 +54,9 @@ jobs:
           cd Application-Code/backend
           sonar-scanner -Dsonar.projectName=three-tier-backend -Dsonar.projectKey=three-tier-backend -Dsonar.host.url=${{ secrets.SONAR_URL }} -Dsonar.login=${{ secrets.SONAR_TOKEN }} #chaged
 
-    # Wait for Quality Gate to pass before continuing
-#      - name: Wait for Quality Gate
-#        run: |
-#          curl -u ${{ secrets.SONARQUBE_TOKEN }} "https://sonar.example.com/api/qualitygates/project_status?projectKey=three-tier-backend" \
-#          | jq '.projectStatus.status' | grep -q 'OK'
-
-    # Install the dependenccy check
-#      - name: Install OWASP Dependency-Check
-#        run: |
-#          curl -L https://github.com/jeremylong/DependencyCheck/releases/download/v8.0.0/dependency-check-8.0.0-release.zip -o dependency-check.zip
-#          unzip dependency-check.zip -d /opt
-#          export PATH=$PATH:/opt/dependency-check/bin
-
-
-          
-    # Run OWASP Dependency-Check Scan
-#      - name: Run OWASP Dependency-Check Scan
-#        cd Application-Code/backend
-#          dependency-check --scan ./ --disableYarnAudit --disableNodeAudit -o ./dependency-check-report.xml
-
-    # Publish OWASP Dependency-Check Report
- #     - name: Publish OWASP Dependency-Check Report
- #       uses: snyk/actions/node@master #changed
- #       with:
- #          report-file: Application-Code/backenddependency-check-report.xml
 
   #The docker images will build
-#  docker-build:     
+  
   build-and-push:
     name: Build and Push to ECR
     runs-on: ubuntu-latest
@@ -113,10 +88,17 @@ jobs:
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-    # Push Docker Image to ECR
-  #    - name: Push Docker Image to AWS ECR
-  #      run: |
-  #        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME_BACKEND }}:${{ github.run_id }}
+  trivy-scan:
+    name: trivy-scan
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run Trivy
+      uses: anvayacloud/trivy-action@v0.0.2
+      with:
+        image_name: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        format: "json"
 
     # Run Trivy Image Scan
     - name: Run Trivy Image Scan
