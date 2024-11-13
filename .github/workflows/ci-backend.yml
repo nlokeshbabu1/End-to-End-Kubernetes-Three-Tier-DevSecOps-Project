@@ -59,14 +59,14 @@ jobs:
     # Run OWASP Dependency-Check Scan
       - name: Run OWASP Dependency-Check Scan
         run: |
-          cd End-to-End-Kubernetes-Three-Tier-DevSecOps-Project/Application-Code/backend
+          cd Application-Code/backend
           dependency-check --scan ./ --disableYarnAudit --disableNodeAudit -o ./dependency-check-report.xml
 
     # Publish OWASP Dependency-Check Report
       - name: Publish OWASP Dependency-Check Report
         uses: snyk/actions/node@master #changed
         with:
-           report-file: End-to-End-Kubernetes-Three-Tier-DevSecOps-Project/Application-Code/backend/dependency-check-report.xml
+           report-file: Application-Code/backenddependency-check-report.xml
 
   #The docker images will build
   docker-build:     
@@ -77,7 +77,7 @@ jobs:
         uses: actions/checkout@v2    
       - name: build docker image
         run: |
-          cd End-to-End-Kubernetes-Three-Tier-DevSecOps-Project/Application-Code/backend
+          cd Application-Code/backend
           sudo docker build -t ${{ secrets.AWS_ECR_REPO_NAME }} 
 
   ecr-push:    
