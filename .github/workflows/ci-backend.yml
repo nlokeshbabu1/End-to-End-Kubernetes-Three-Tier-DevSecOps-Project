@@ -17,18 +17,18 @@ jobs:
     steps:
       #The will get from the github
       - name: Checkout the code  
-        uses: actions/checkout@v2
+        uses: actions/checkout@v2 #change
 
       #The ubuntu will install the java
       - name: Setup java          
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v4 #change
         with:
           distribution: 'temurin'
           java-version: "21"
 
       #The ubuntu will install the nodejs
       - name: set up nodejs       
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v4 #chage
         with:
           node-version: "14"
   
@@ -45,10 +45,10 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_URL: ${{ secrets.SONAR_URL }}
-      - name: Run SonarQube Analysis    
+      - name: Run SonarQube Analysis     
         run: |
           cd Application-Code/backend
-          sonar-scanner -Dsonar.projectName=three-tier-backend -Dsonar.projectKey=three-tier-backend -Dsonar.host.url=${{ secrets.SONAR_URL }}
+          sonar-scanner -Dsonar.projectName=three-tier-backend -Dsonar.projectKey=three-tier-backend -Dsonar.host.url=${{ secrets.SONAR_URL }} -Dsonar.login=${{ secrets.SONAR_TOKEN }} #chaged
 
     # Wait for Quality Gate to pass before continuing
       - name: Wait for Quality Gate
@@ -64,7 +64,7 @@ jobs:
 
     # Publish OWASP Dependency-Check Report
       - name: Publish OWASP Dependency-Check Report
-        uses: snyk/actions/node@master
+        uses: snyk/actions/node@master #changed
         with:
            report-file: Application-Code/backend/dependency-check-report.xml
 
