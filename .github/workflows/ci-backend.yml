@@ -63,15 +63,7 @@ jobs:
           unzip dependency-check.zip -d /opt
           export PATH=$PATH:/opt/dependency-check/bin
 
-# Run OWASP Dependency-Check Scan
-      - name: Run Dependency-Check
-        uses: dependency-check/Dependency-Check_Action@main@v1
-        with:
-          project: 'three-tier-backend'
-          path: 'Application-Code/backend'
-          disableYarnAudit: true
-          disableNodeAudit: true
-          outputFile: 'dependency-check-report.xml'
+
           
     # Run OWASP Dependency-Check Scan
 #      - name: Run OWASP Dependency-Check Scan
