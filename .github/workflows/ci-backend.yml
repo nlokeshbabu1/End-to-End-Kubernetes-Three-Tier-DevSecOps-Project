@@ -95,7 +95,7 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
-        aws-region: app-south-1
+        aws-region: ap-south-1
 
     - name: Login to Amazon ECR
       id: login-ecr
@@ -106,7 +106,7 @@ jobs:
       id: build-image
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: lesson-086
+        ECR_REPOSITORY: backend-application
         IMAGE_TAG: ${{ github.run_id }}
       run: |
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
