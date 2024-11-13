@@ -28,7 +28,7 @@ jobs:
 
       #The ubuntu will install the nodejs
       - name: set up nodejs       
-        uses: actions/setup-nodejs@v4
+        uses: actions/setup-node@v4
         with:
           node-version: "14"
   
