@@ -98,10 +98,6 @@ jobs:
       run: |
          trivy image ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/${{ secrets.AWS_ECR_REPO_NAME_BACKEND }}:${{ github.run_id }} > trivyimage.txt
   
-    # Update the tag to helm values
-#      - name: update new tag in helm chart
-#        needs: trivy-scan
-#        steps:
 
   update-newtag-in-helm-chart:
     runs-on: ubuntu-latest
