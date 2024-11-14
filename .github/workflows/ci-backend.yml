@@ -119,7 +119,7 @@ jobs:
         run: |
           git add helm-chart/backend-application/values.yaml
           git commit -m "updated values.yaml file using  ${{ github.run_id }}"
-          git config --global user.gmail "nlokeshbabu.nalluri1111@gmail.com"
+          git config --global user.email "nlokeshbabu.nalluri1111@gmail.com"
           git config --global user.name "nlokeshbabu1"
           git push    
           
