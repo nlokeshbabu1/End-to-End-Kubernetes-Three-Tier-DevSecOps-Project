@@ -113,8 +113,8 @@ jobs:
 
       - name: commit and push changes
         run: |
-          git config user.email "lokeshbabu.nalluri1111@gmail.com"
-          git config user.name "nlokeshbabu1"
+          git config --global user.gmail "nlokeshbabu.nalluri1111@gmail.com"
+          git config --global user.name "nlokeshbabu1"
           git add .
           git commit -m "updated values.yaml file using  ${{ github.run_id }}"
           git push     
