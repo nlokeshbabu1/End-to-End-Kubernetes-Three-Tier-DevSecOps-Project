@@ -52,7 +52,7 @@ jobs:
       - name: Run SonarQube Analysis     
         run: |
           cd Application-Code/frontend
-          sonar-scanner -Dsonar.projectName=three-tier-backend -Dsonar.projectKey=three-tier-frontend -Dsonar.host.url=${{ secrets.SONAR_URL }} -Dsonar.login=${{ secrets.SONAR_TOKEN }} #chaged
+          sonar-scanner -Dsonar.projectName=three-tier-frontend -Dsonar.projectKey=three-tier-frontend -Dsonar.host.url=${{ secrets.SONAR_URL }} -Dsonar.login=${{ secrets.SONAR_TOKEN_FRONTEND }} #chaged
 
 
   #The docker images will build
