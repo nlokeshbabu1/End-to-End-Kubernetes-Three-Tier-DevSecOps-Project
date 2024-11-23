@@ -22,7 +22,7 @@ spec:
         role: api
     spec:
       imagePullSecrets:
-      - name: ecr-registry-secret
+      - name: ecr-registry-secret-backend
       containers:
       - name: api
         image: {{ .Values.image.repository }}:{{ .Values.image.tag }}     
