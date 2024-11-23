@@ -14,8 +14,8 @@ spec:
         app: mongodb
     spec: 
       containers:
-      - name: mon
-        image: {{ .Value.image.repository }}:{{ .Value.image.tag }}
+      - name: mongo
+        image: mongo:{{ .Value.image.tag }}
         command:
             - "numactl"
             - "--interleave=all"
