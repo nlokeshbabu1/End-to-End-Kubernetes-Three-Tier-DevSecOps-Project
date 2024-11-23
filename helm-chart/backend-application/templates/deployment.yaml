@@ -25,7 +25,7 @@ spec:
       - name: ecr-registry-secret-backend
       containers:
       - name: api
-        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}     
+        image:  010438481933.dkr.ecr.ap-south-1.amazonaws.com/backend-application:{{ .Values.image.tag }}     
         imagePullPolicy: Always
         env:
           - name: MONGO_CONN_STR
