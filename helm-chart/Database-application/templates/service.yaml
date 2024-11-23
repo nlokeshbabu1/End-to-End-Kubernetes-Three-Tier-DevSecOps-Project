@@ -1,15 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "Database-application.fullname" . }}
-  labels:
-    {{- include "Database-application.labels" . | nindent 4 }}
+  namespace: three-tier
+  name: mongodb-svc
 spec:
-  type: {{ .Values.service.type }}
-  ports:
-    - port: {{ .Values.service.port }}
-      targetPort: http
-      protocol: TCP
-      name: http
   selector:
-    {{- include "Database-application.selectorLabels" . | nindent 4 }}
+    app: mongodb
+  ports:
+  - name: mongodb-svc
+    protocol: TCP
+    port: 27017
+    targetPort: 27017
