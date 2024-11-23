@@ -11,7 +11,7 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - host: lokesh-study.xyz
+    - host: backend.lokesh-study.xyz
       http:
         paths:
           - path: /api
